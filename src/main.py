@@ -29,15 +29,19 @@ def parse_args():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
+  # 命令行模式
   python src/main.py --script examples/simple_story.txt
   python src/main.py --script examples/simple_story.txt --model glm
   python src/main.py --script examples/simple_story.txt --generate-images
+  
+  # 桌面应用模式
+  python src/main.py --gui
+  python src/main.py -g
         """
     )
     
     parser.add_argument(
         "--script", "-s",
-        required=True,
         help="剧本文件路径 (支持 .txt 和 .json)"
     )
     
@@ -61,6 +65,12 @@ def parse_args():
     )
     
     parser.add_argument(
+        "--gui",
+        action="store_true",
+        help="启动桌面图形界面"
+    )
+    
+    parser.add_argument(
         "--list-models",
         action="store_true",
         help="列出支持的 AI 模型"
@@ -77,9 +87,32 @@ def list_models():
     console.print()
 
 
+def launch_gui():
+    """启动桌面 GUI"""
+    try:
+        from PyQt5.QtWidgets import QApplication
+        from src.desktop import MainWindow
+    except ImportError:
+        console.print("[error]错误: 缺少 PyQt5，请运行: pip install PyQt5[/error]")
+        sys.exit(1)
+    
+    app = QApplication(sys.argv)
+    app.setStyle('Fusion')
+    
+    window = MainWindow()
+    window.show()
+    
+    sys.exit(app.exec_())
+
+
 def main():
     """主函数"""
     args = parse_args()
+    
+    # 启动 GUI 模式
+    if args.gui:
+        launch_gui()
+        return
     
     # 列出模型
     if args.list_models:
@@ -87,6 +120,11 @@ def main():
         return
     
     # 检查脚本文件
+    if not args.script:
+        console.print("[error]错误: 请指定剧本文件 (--script)[/error]")
+        console.print("[info]或使用 --gui 启动桌面界面[/info]")
+        sys.exit(1)
+    
     script_path = Path(args.script)
     if not script_path.exists():
         console.print(f"[error]错误: 剧本文件不存在: {args.script}[/error]")
